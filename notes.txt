@@ -1,0 +1,155 @@
+import https from "node:https";
+import { URL } from "node:url";
+
+// Parse the URL
+const url = new URL("https://jsonplaceholder.typicode.com/posts/1");
+
+// Request options
+const options = {
+  hostname: url.hostname,
+  path: url.pathname,
+  method: "GET",  
+  headers: {
+    Accept: "application/json",
+    "User-Agent": "MySecureApp/1.0",
+  },
+};
+
+console.log(`Fetching data from: ${url}`);
+
+// Make the GET request
+const req = https.get(options, (res) => {
+  const { statusCode } = res;
+  const contentType = res.headers["content-type"];
+
+  //   console.log(res.headers);
+
+  if (statusCode !== 200) {
+    console.error(`Request failed with status code: ${statusCode}`);
+    res.resume(); // Consume response data to free up memory
+    return;
+  }
+
+  if (!/^application\/json/.test(contentType)) {
+    console.error(`Expected JSON but got ${contentType}`);
+    res.resume();
+    return;
+  }
+
+  let rawData = "";
+  res.setEncoding("utf8");
+
+  // Collect data chunks
+  res.on("data", (chunk) => {
+    rawData += chunk;
+    console.log(chunk);
+  });
+
+  // Process complete response
+  res.on("end", () => {
+    try {
+      const parsedData = JSON.parse(rawData);
+      console.log("Received data:", parsedData);
+    } catch (e) {
+      console.error("Error parsing JSON:", e.message);
+    }
+  });
+});
+
+// Handle errors
+req.on("error", (e) => {
+  console.error(`Error: ${e.message}`);
+});
+
+// Set a timeout
+req.setTimeout(10000, () => {
+  console.error("Request timeout");
+  req.destroy();
+});
+
+
+==================================================================================
+
+
+import http from "node:http";
+import userRoutes from "./routes/users.js";
+
+const server = http.createServer((req, res) => {
+  const { method, url } = req;
+
+  if (url.startsWith("/api/users")) {
+    userRoutes(req, res);
+  } else {
+    res.writeHead(404, { "content-type": "html" });
+    res.end("<h1>404 NOT FOUND!</h1>");
+  }
+});
+
+const PORT = 3000;
+
+server.listen(PORT, () => {
+  console.log(`port is running on ${PORT}`);
+});
+
+===================================================
+
+filename with slash is ABSOLUTE path
+filename without slash is RELATIVE
+
+/test
+    /accounts
+        process.js  
+        data.txt
+    index.js
+
+ABSOLUTE    C:\accounts\data.txt
+RELATIVE    C:\test\accounts\data.txt
+
+===================================================
+
+import http from "http";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const getFilePath = (fileName) => path.join(__dirname, "public", fileName);
+
+const sendFile = (res, fileName, statusCode = 200) => {
+  fs.readFile(getFilePath(fileName), (err, data) => {
+    if (err) {
+      res.writeHead(404);
+      res.end("file not found");
+      return;
+    }
+
+    res.writeHead(statusCode, { "content-type": "html" });
+    res.end(data);
+  });
+};
+
+const server = http.createServer((req, res) => {
+  const { url } = req;
+
+  switch (url) {
+    case "/index.html":
+      sendFile(res, "/index.html");
+      break;
+    case "/contact.html":
+      sendFile(res, "/contact.html");
+      break;
+    case "/about.html":
+      sendFile(res, "/about.html");
+      break;
+    default:
+      sendFile(res, "/404.html", 404);
+  }
+});
+
+server.listen(3000, () => {
+  console.log("Server is running on port 3000");
+});
+
+==== 
