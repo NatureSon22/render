@@ -7,7 +7,7 @@ const app = express();
 
 app.get("/messages", (req, res) => {
   console.log(req.query);
-  res.json({ data: { id: 1, message: "sample message", date: new Date() } });
+  res.json({ data: { id: 1, message: "sample message", date: new Date() + "" } });
 });
 
 app.get("/messages/:id", (req, res) => {
